@@ -1,0 +1,6 @@
+gradio
+folium
+pillow
+pillow-heif
+torch
+numpy
