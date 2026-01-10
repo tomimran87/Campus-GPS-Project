@@ -51,7 +51,7 @@ with gr.Blocks(theme=design.get_theme(), css=design.get_css(), title="GeoSpatial
                 value=get_default_map(), 
                 label="Geospatial Lock",
                 elem_classes=["map-container"],
-                min_height=750 
+                min_height=900 
             )
 
     run_btn.click(
