@@ -90,10 +90,19 @@ def get_css():
         display: block;
     }
     .map-container {
-        border-radius: 20px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        height: 100% !important;
+        min_height: 900px !important; /* Minimum guarantee */
+        display: flex;
+        flex-direction: column;
+    }
+    .map-container > div {
+        flex-grow: 1;
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .map-container iframe {
+        height: 100% !important;
+        min_height: 900px; /* Ensures the map inside stays tall */
     }
     #predict-btn {
         font-weight: 700;
