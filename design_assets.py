@@ -115,10 +115,10 @@ def get_css():
 def get_header_html():
     return """
     <div class="hero-container">
-        <div class="hero-title">GeoSpatial Core</div>
+        <div class="hero-title">Campus Image-to-GPS Regression for
+            Localization and Navigation</div>
         <div class="hero-subtitle">
-            Autonomous location inference powered by EfficientNet-B7. 
-            Delivering high-precision coordinate regression from ground-level visual data.
+            Utilizing an EfficientNet regression model to identify specific GPS locations from images taken within Ben-Gurion University
         </div>
     </div>
     """
