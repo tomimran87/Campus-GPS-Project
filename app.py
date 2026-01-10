@@ -47,7 +47,9 @@ with gr.Blocks(theme=design.get_theme(), css=design.get_css(), title="Campus Ima
 
         # --- RIGHT PANEL (Map) ---
         with gr.Column(scale=7):
-            # REMOVED 'min_height'. The CSS 'map-container' class now forces 100% height.
+
+            gr.Markdown("Live Location Tracking", elem_classes=["section-header"])
+            
             map_output = gr.HTML(
                 value=get_default_map(), 
                 label="Geospatial Lock",
