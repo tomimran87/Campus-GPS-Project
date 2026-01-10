@@ -50,8 +50,7 @@ with gr.Blocks(theme=design.get_theme(), css=design.get_css(), title="Campus Ima
             map_output = gr.HTML(
                 value=get_default_map(), 
                 label="Geospatial Lock",
-                elem_classes=["map-container"],
-                min_height=900 
+                elem_classes=["map-container"], 
             )
 
     run_btn.click(
