@@ -54,7 +54,10 @@ def predict(input_img, image_size=(224, 224)):
 
 def real_Gps_Coordination(input_img):
     gps = get_gps_from_image(input_img)
-    return [gps[0], gpgs[1]]
+    if gps is None:
+        return 0.0, 0.0
+        
+    return gps[0], gpgs[1]
 
 def calculate_Distance(real_location, predicted_location):
     R = 6371.0
