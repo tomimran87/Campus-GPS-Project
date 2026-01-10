@@ -25,7 +25,7 @@ def get_css():
         background-attachment: fixed;
     }
 
-    /* --- CENTERING FIX --- */
+    /* --- HERO HEADER --- */
     .hero-container {
         text-align: center;
         padding: 40px 0 20px 0;
@@ -35,7 +35,6 @@ def get_css():
         flex-direction: column;
         align-items: center;     
     }
-    
     .hero-title {
         font-family: 'Inter', sans-serif;
         font-weight: 800;
@@ -46,7 +45,6 @@ def get_css():
         letter-spacing: -2px;
         line-height: 1.1;
     }
-    
     .hero-subtitle {
         font-size: 1.25rem;
         color: #94a3b8;
@@ -56,31 +54,45 @@ def get_css():
         line-height: 1.6;
     }
 
-    /* --- GLASS CARDS (STATS) --- */
+    /* --- THE LAYOUT MAGIC (Flexbox Linking) --- */
+    .dashboard-row {
+        display: flex !important;
+        align-items: stretch !important; /* This forces both columns to be equal height */
+        gap: 20px;
+    }
+    /* Make the inner columns fill the height */
+    .dashboard-row > div {
+        display: flex;
+        flex-direction: column;
+        height: auto !important; 
+    }
+
+    /* --- LEFT SIDE: AUTO-GROWING TEXT --- */
     .stat-card {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 16px !important;
-        padding: 10px 15px !important; /* Increased padding */
+        padding: 15px !important;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        min-height: 100px; /* Force minimum height for the card */
+        flex-grow: 0; /* Don't stretch the card itself unnecessarily */
     }
     .stat-card textarea {
         background: transparent !important;
         border: none !important;
         color: #e2e8f0 !important;
-        font-size: 1.25rem !important; /* Reduced from 1.6rem to fit decimals */
+        font-size: 1.25rem !important; 
         font-weight: 700 !important;
         box-shadow: none !important;
-        height: auto !important;
-        min-height: 40px !important;
-        line-height: 1.5 !important;
-        overflow: visible !important; /* Let text show */
-        margin-top: 5px !important;
-        white-space: pre-wrap !important; /* Allow wrapping if needed */
+        
+        /* Auto-fit magic */
+        height: auto !important; 
+        min-height: 60px !important; /* Minimum space */
+        white-space: pre-wrap !important; /* Wrap text naturally */
+        overflow: visible !important;
+        resize: vertical !important;
     }
     .stat-card label span {
         color: #94a3b8 !important;
@@ -92,10 +104,13 @@ def get_css():
         display: block;
     }
 
-    /* --- MAP CONTAINER FIX --- */
+    /* --- RIGHT SIDE: LIQUID MAP --- */
     .map-container {
-        height: 100% !important;
-        min-height: 900px !important; /* CORRECTION: min-height (dash) not min_height (underscore) */
+        /* This is crucial: fill the available space provided by the neighbor column */
+        height: 100% !important; 
+        width: 100% !important;
+        min-height: 600px; /* Fallback: don't get smaller than this */
+        
         display: flex;
         flex-direction: column;
         border-radius: 20px;
@@ -103,19 +118,17 @@ def get_css():
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
-    .map-container > div {
-        flex-grow: 1;
-        width: 100% !important;
-        height: 100% !important;
-    }
-    /* Target the iframe inside Gradio HTML component */
+    
+    /* Force the inner iframe to fill the container */
+    .map-container > div, 
     .map-container iframe {
         height: 100% !important;
-        min-height: 900px !important; /* CORRECTION: dash not underscore */
         width: 100% !important;
+        flex-grow: 1;
         border: none;
     }
 
+    /* --- BUTTONS & HEADERS --- */
     #predict-btn {
         font-weight: 700;
         letter-spacing: 0.5px;
