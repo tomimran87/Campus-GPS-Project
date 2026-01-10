@@ -66,17 +66,20 @@ def get_css():
         height: auto !important; 
     }
 
-    /* --- SECTION HEADERS --- */
-    .section-header h3 {
+    /* --- SECTION HEADERS (CENTERED) --- */
+    /* This forces your headlines to be centered */
+    .section-header p, .section-header h3 {
+        text-align: center !important; 
         color: #e0e7ff !important;
         font-weight: 700;
         margin-bottom: 10px;
         font-size: 1.2rem;
         text-transform: uppercase;
         letter-spacing: 1px;
+        width: 100%;
     }
 
-    /* --- STAT CARDS (No Scrollbars!) --- */
+    /* --- STAT CARDS --- */
     .stat-card {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(10px);
@@ -94,12 +97,9 @@ def get_css():
         font-size: 1.25rem !important; 
         font-weight: 700 !important;
         box-shadow: none !important;
-        
         height: auto !important; 
         min-height: 60px !important; 
         white-space: pre-wrap !important; 
-        
-        /* NO SCROLLBARS FIX */
         overflow: hidden !important;
         resize: none !important;
     }
@@ -113,11 +113,9 @@ def get_css():
         display: block;
     }
 
-    /* --- MAP CONTAINER (FULL FILL) --- */
+    /* --- MAP CONTAINER (FIXED) --- */
     .map-container {
-        flex-grow: 1; /* Consume all remaining height */
-        height: 100% !important;
-        width: 100% !important;
+        flex-grow: 1;
         display: flex;
         flex-direction: column;
         border-radius: 20px;
@@ -126,16 +124,15 @@ def get_css():
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
     
-    /* Force the iframe to fill the container */
-    .map-container iframe,
-    .map-container > div {
-        height: 100% !important;
+    /* FIX: Force the map inside to have a minimum height so it never disappears */
+    .map-container iframe {
+        min-height: 800px !important; /* <--- THIS IS THE FIX FOR THE MISSING MAP */
         width: 100% !important;
+        height: 100% !important;
         border: none !important;
         display: block !important;
     }
 
-    /* --- BUTTONS --- */
     #predict-btn {
         font-weight: 700;
         letter-spacing: 0.5px;
