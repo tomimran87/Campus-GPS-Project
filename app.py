@@ -24,7 +24,7 @@ with gr.Blocks(theme=design.get_theme(), css=design.get_css(), title="Campus Ima
         # --- LEFT PANEL (Controls & Stats) ---
         with gr.Column(scale=4, min_width=350):
             
-            gr.Markdown("Put Your Photo Here :)", elem_classes=["section-header"])
+            gr.Markdown("### Put Your Photo Here :)", elem_classes=["section-header"])
             input_img = gr.Image(
                 type="filepath", 
                 height=320,
@@ -35,7 +35,7 @@ with gr.Blocks(theme=design.get_theme(), css=design.get_css(), title="Campus Ima
             
             gr.HTML("<br>") 
             
-            gr.Markdown("Model results compared to the ground truth", elem_classes=["section-header"])
+            gr.Markdown("### Model results compared to the ground truth", elem_classes=["section-header"])
             
             with gr.Group():
                 dist_output = gr.Textbox(label="Error (Haversine)", value="0.000 km", elem_classes=["stat-card"])
@@ -48,7 +48,7 @@ with gr.Blocks(theme=design.get_theme(), css=design.get_css(), title="Campus Ima
         # --- RIGHT PANEL (Map) ---
         with gr.Column(scale=7):
 
-            gr.Markdown("Live Location Tracking", elem_classes=["section-header"])
+            gr.Markdown("### Live Location Tracking", elem_classes=["section-header"])
             
             map_output = gr.HTML(
                 value=get_default_map(), 
