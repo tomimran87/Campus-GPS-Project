@@ -1,5 +1,7 @@
 # 🌍 Campus Image-to-GPS Regression
 
+### 🔗 [Click Here to Launch the Live App](https://huggingface.co/spaces/liranatt/GPU_Modell_Liran_and_Tom)
+
 ### Project Overview
 This project implements a **Deep Learning-based Visual Localization System** designed to predict precise GPS coordinates (Latitude, Longitude) from a single ground-level image. Unlike traditional retrieval-based methods, this system utilizes a **Regression-based approach** powered by an **EfficientNet-B7** backbone, allowing for continuous coordinate prediction rather than discrete classification.
 
