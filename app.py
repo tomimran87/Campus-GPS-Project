@@ -24,7 +24,7 @@ with gr.Blocks(theme=design.get_theme(), css=design.get_css(), title="GeoSpatial
             
             gr.Markdown("### 📡 Visual Input", elem_classes=["section-header"])
             input_img = gr.Image(
-                type="pil", 
+                type="filepath", 
                 label="Sensor Feed", 
                 height=320,
                 elem_classes=["image-container"]
