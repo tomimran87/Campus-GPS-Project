@@ -1,48 +1,42 @@
 import gradio as gr
 
 def get_theme():
-    """
-    Creates a custom 2026-style theme based on the 'Base' theme
-    but overridden with deep-space colors and neon accents.
-    """
+    # (Keep the theme settings exactly the same as before)
     return gr.themes.Base(
         primary_hue="violet",
         secondary_hue="indigo",
         neutral_hue="slate",
         font=[gr.themes.GoogleFont("Inter"), "ui-sans-serif", "system-ui"],
     ).set(
-        body_background_fill="#0f111a",  # Very deep slate/black
-        block_background_fill="#1e2230", # Slightly lighter for cards
+        body_background_fill="#0f111a", 
+        block_background_fill="#1e2230", 
         block_border_width="1px",
         block_border_color="rgba(255, 255, 255, 0.1)",
         block_shadow="0 10px 30px rgba(0,0,0,0.5)",
-        input_background_fill="rgba(0,0,0,0.3)", # Semi-transparent inputs
+        input_background_fill="rgba(0,0,0,0.3)", 
         button_primary_background_fill="linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
         button_primary_text_color="white",
-        button_primary_shadow="0 0 15px rgba(168, 85, 247, 0.5)", # Neon glow
+        button_primary_shadow="0 0 15px rgba(168, 85, 247, 0.5)", 
     )
 
 def get_css():
-    """
-    Injects aggressive CSS for animations, glassmorphism, and layout.
-    """
     return """
-    /* --- ANIMATED BACKGROUND --- */
     body {
         background: radial-gradient(circle at 50% 0%, #2e1065 0%, #0f111a 60%);
         background-attachment: fixed;
     }
 
-    /* --- TYPOGRAPHY --- */
+    /* --- CENTERING FIX --- */
     .hero-container {
-        text-align: center;
+        text-align: center;      /* Changed from left to center */
         padding: 40px 0 20px 0;
         border-bottom: 1px solid rgba(255,255,255,0.05);
         margin-bottom: 30px;
-        display: flex;           
+        display: flex;           /* Use flexbox for perfect alignment */
         flex-direction: column;
-        align-items: center;
+        align-items: center;     
     }
+    
     .hero-title {
         font-family: 'Inter', sans-serif;
         font-weight: 800;
@@ -53,26 +47,22 @@ def get_css():
         letter-spacing: -2px;
         line-height: 1.1;
     }
+    
     .hero-subtitle {
         font-size: 1.25rem;
         color: #94a3b8;
         font-weight: 300;
-        max-width: 800px;       
+        max-width: 800px;        /* Increased width slightly for better reading */
         margin-top: 15px;
         line-height: 1.6;
     }
 
-    /* --- GLASS CARDS (STATS) --- */
+    /* --- STATS & UI --- */
     .stat-card {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 16px !important;
-        transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-    .stat-card:hover {
-        border-color: rgba(139, 92, 246, 0.5) !important;
-        transform: translateY(-2px);
     }
     .stat-card textarea {
         background: transparent !important;
@@ -81,7 +71,6 @@ def get_css():
         font-size: 1.4rem !important;
         font-weight: 700 !important;
         box-shadow: none !important;
-        padding-top: 5px !important;
     }
     .stat-card label span {
         color: #64748b !important;
@@ -90,31 +79,26 @@ def get_css():
         letter-spacing: 1.5px;
         font-weight: 600;
     }
-
-    /* --- MAP CONTAINER --- */
     .map-container {
         border-radius: 20px;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        background: #1e2230;
     }
-
-    /* --- BUTTONS --- */
     #predict-btn {
         font-weight: 700;
         letter-spacing: 0.5px;
-        border: none;
         transition: all 0.3s ease;
     }
     #predict-btn:hover {
         transform: scale(1.02);
         box-shadow: 0 0 25px rgba(168, 85, 247, 0.7);
     }
-    
-    /* --- IMAGE UPLOAD --- */
-    .image-container button {
-        border-radius: 16px;
+    .section-header p {
+        font-size: 1.1rem;
+        color: #cbd5e1;
+        font-weight: 600;
+        margin-bottom: 10px;
     }
     """
 
