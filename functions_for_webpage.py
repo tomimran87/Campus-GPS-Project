@@ -44,8 +44,15 @@ def map_distance_visualizer(gps1, gps2):
 
 # Model prediction function
 def predict(image_path, image_size=(224, 224)):
+    if image_path is None:
+        return 0.0, 0.0
+    try:
+        input_img = Image.open(image_path)
+    except Exception:
+        return 0.0, 0.0
+    
     final_results = [31.262520, 34.799629]
-    img_resized = input_img.resize(image_size)
+    img_resized =  input_img.resize(image_size)
     img_array = np.array(img_resized.convert('RGB'))
 
     X_batch = np.array([img_array])
@@ -57,8 +64,11 @@ def real_Gps_Coordination(image_path):
     if image_path is None:
         return 0.0, 0.0
 
-    img_ojb = Image.open(image_path)
-    gps = get_gps_from_image(img_obj)
+    try:
+        img_obj = Image.open(image_path)
+        gps = get_gps_from_image(img_obj)
+    except Exception:
+        return 0.0, 0.0
 
     if gps is None:
         return 0.0, 0.0
