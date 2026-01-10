@@ -73,7 +73,7 @@ def real_Gps_Coordination(image_path):
     if gps is None:
         return 0.0, 0.0
         
-    return gps[0], gpgs[1]
+    return gps[0], gps[1]
 
 def calculate_Distance(real_location, predicted_location):
     R = 6371.0
