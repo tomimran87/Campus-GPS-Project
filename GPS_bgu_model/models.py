@@ -21,121 +21,168 @@ class TanhTo01(nn.Module):
 
 class ResNetGPS(BaseGPSModel):
     """
-    GPS Localization Model using ResNet18 Backbone
+    GPS Localization Model using Modified ResNet18 Architecture
+    
+    MODIFICATIONS FROM STANDARD ResNet18:
+        1. Backbone: Use standard ResNet18 pre-trained on ImageNet
+        2. Remove: Final classification layer (originally 512 → 1000 classes)
+        3. Add: Custom regression head for GPS coordinate prediction
     
     Architecture:
-        - Backbone: ResNet18 pretrained on ImageNet (1.2M images, 1000 classes)
-        - Features: 512-dimensional vector after global average pooling
-        - Head: 3-layer MLP with LayerNorm, dropout, and SiLU activations
-        - Output: 2D GPS coordinates [latitude, longitude]
+        - Backbone: ResNet18 pretrained on ImageNet (removes final fc layer)
+        - Features: 512-dimensional vector after global average pooling  
+        - Head: Custom 3-layer regression MLP
+        - Output: 2D GPS coordinates [latitude, longitude] in [0,1] range
     
-    ResNet18 (Residual Network):
-        - 18 layers deep with residual (skip) connections
-        - Residual connections: y = F(x) + x (allows gradient flow)
-        - Uses batch normalization for training stability
-        - Efficient: 11M parameters, good for real-time inference
-        - Pretrained weights provide strong visual feature extraction
+    ResNet18 Backbone Details:
+        - 18 convolutional layers with residual connections
+        - Pretrained on ImageNet (1.2M images, 1000 classes)
+        - Final feature dimension: 512 (after removing classification head)
+        - Residual connections: y = F(x) + x (enables deep training)
+        - Global Average Pooling reduces spatial dimensions to 1×1
     
-    Head Design:
+    Custom Regression Head Design:
         512 → [Dropout 0.3] → [Linear 128] → [LayerNorm] → [SiLU] →
         → [Linear 64] → [LayerNorm] → [SiLU] → [Linear 2] → [Sigmoid]
+        
+        - Progressive dimension reduction: 512 → 128 → 64 → 2
+        - LayerNorm for training stability
+        - SiLU activation for smooth gradients
+        - Sigmoid output to constrain GPS coordinates to [0,1]
+        - Dropout for regularization
     
-    Activation Function (SiLU):
-        SiLU(x) = x * sigmoid(x)
-        - Smooth, non-monotonic activation (also called Swish)
-        - Better gradient flow than ReLU for regression tasks
-        - Used in EfficientNet and modern architectures
-    
-    Regularization:
-        - Dropout (p=0.3): Randomly zeros 30% of activations during training
-        - LayerNorm: Normalizes activations, reduces internal covariate shift
-        - Weight Decay: Applied via AdamW optimizer (1e-4)
-    
-    Output Activation (Sigmoid):
-        - Constrains outputs to [0, 1] range
-        - Matches the normalized GPS coordinate range
-        - Prevents extreme predictions that cause NaN
-    
-    Performance:
-        - Fast training: ~2-3s per epoch on GPU
-        - Moderate accuracy: Good baseline model
-        - Stable with gradient clipping
+    Key Benefits:
+        - Leverages ImageNet pretrained features (transfer learning)
+        - Custom head specifically designed for GPS regression
+        - Stable training with proper normalization
+        - Efficient: ~11M parameters total
     
     Reference:
         He et al., "Deep Residual Learning for Image Recognition", CVPR 2016
     """
     def __init__(self):
         super().__init__()
-        # Load pretrained backbone and create regression head
+        # Create modified ResNet18: pretrained backbone + custom regression head
         self.backbone = self._get_backbone()
-        self.head = self._get_head(512)  # ResNet18's fc layer has 512 input features
+        self.head = self._get_head(512)  # ResNet18 outputs 512 features after GAP
 
     def _get_backbone(self):
         """
-        Create ResNet18 feature extractor
+        Create Modified ResNet18 Feature Extractor
         
-        Modifications from original ResNet18:
-            1. Remove final fully-connected layer (originally 512 → 1000 for ImageNet)
-            2. Keep global average pooling (reduces spatial dims to 1x1)
-            3. Add Flatten layer to convert (batch, 512, 1, 1) → (batch, 512)
+        STEP 1: Load standard ResNet18 pretrained on ImageNet
+        STEP 2: Remove final classification layer (512 → 1000 classes)
+        STEP 3: Keep global average pooling + add flatten layer
         
-        The pretrained weights are from ImageNet training, which learned
-        to recognize 1000 object categories. These features transfer well
-        to GPS localization as they capture general visual patterns.
+        Original ResNet18 Architecture:
+            Input (3×224×224) → Conv1 → BN → ReLU → MaxPool →
+            → ResBlock1 → ResBlock2 → ResBlock3 → ResBlock4 →
+            → GlobalAvgPool → [REMOVED: Linear(512→1000)] 
+        
+        Our Modified Backbone:
+            Input (3×224×224) → Conv1 → BN → ReLU → MaxPool →
+            → ResBlock1 → ResBlock2 → ResBlock3 → ResBlock4 →
+            → GlobalAvgPool → Flatten → Output (512-dim vector)
+        
+        Key Modifications:
+            ❌ REMOVED: Final fc layer (classification head for ImageNet)
+            ✅ KEPT: All convolutional layers + global average pooling  
+            ✅ ADDED: Flatten layer to convert (batch,512,1,1) → (batch,512)
+        
+        Transfer Learning Benefits:
+            - Pretrained weights encode powerful visual features
+            - Lower layers detect edges, textures, simple shapes
+            - Higher layers detect complex objects, spatial patterns
+            - Saves training time vs. training from scratch
         
         Returns:
-            nn.Sequential: Feature extractor outputting 512-dim vectors
+            nn.Sequential: Modified ResNet18 backbone (input: images, output: 512-dim features)
         """
-        # Load pretrained ResNet18 from torchvision
-        # weights='DEFAULT' uses best available pretrained weights
+        # Load standard ResNet18 with ImageNet pretrained weights
         resnet = models.resnet18(weights='DEFAULT')
         
-        # ResNet18 structure: conv1 → bn1 → relu → maxpool → 
-        #                     layer1 → layer2 → layer3 → layer4 → 
-        #                     avgpool → fc
-        # We keep everything except the final fc (classification) layer
-        # list(resnet.children())[:-1] removes the fc layer
-        # nn.Flatten() converts (batch, 512, 1, 1) to (batch, 512)
-        return nn.Sequential(*list(resnet.children())[:-1], nn.Flatten())
+        # Remove the final classification layer but keep everything else:
+        # list(resnet.children()) = [conv1, bn1, relu, maxpool, layer1, layer2, layer3, layer4, avgpool, fc]
+        # [:-1] removes the fc layer, keeping: [conv1, bn1, relu, maxpool, layer1, layer2, layer3, layer4, avgpool]
+        backbone_layers = list(resnet.children())[:-1]
+        
+        # Add Flatten layer to convert (batch, 512, 1, 1) → (batch, 512)
+        backbone_layers.append(nn.Flatten())
+        
+        return nn.Sequential(*backbone_layers)
 
     def _get_head(self, input_features):
         """
-        Create regression head for GPS coordinate prediction
+        Create Custom Regression Head for GPS Coordinate Prediction
         
-        Architecture choices:
-            - Dropout first: Regularize incoming features, prevent co-adaptation
-            - 512 → 128 → 64: Gradually compress to 2D output
-            - LayerNorm: Stabilize training, normalize across features
-            - SiLU activation: Smooth gradients for regression
-            - Sigmoid output: Constrain to [0, 1] range (matches normalized GPS)
+        INPUT: 512-dimensional features from ResNet18 backbone
+        OUTPUT: 2D GPS coordinates [latitude, longitude] in [0,1] range
         
-        LayerNorm vs BatchNorm:
-            - LayerNorm normalizes across feature dimension (not batch)
-            - More stable for small batch sizes
-            - Doesn't require running statistics
-            - Better for regression tasks
+        Custom Head Architecture:
+            512 → [Dropout(0.3)] → [Linear(512→128)] → [LayerNorm(128)] → [SiLU] 
+                → [Linear(128→64)] → [LayerNorm(64)] → [SiLU]
+                → [Linear(64→2)] → [Sigmoid] → [lat, lon]
+        
+        Design Rationales:
+        
+        🎯 PROGRESSIVE COMPRESSION: 512 → 128 → 64 → 2
+           - Gradually reduces dimensionality to avoid information bottlenecks
+           - Each layer learns increasingly specialized GPS-relevant features
+        
+        🛡️ REGULARIZATION: Dropout(0.3) at input
+           - Prevents overfitting by randomly zeroing 30% of backbone features
+           - Forces model to not rely on specific feature combinations
+        
+        📊 NORMALIZATION: LayerNorm after each linear layer
+           - Normalizes activations across feature dimension
+           - More stable than BatchNorm for small batch sizes
+           - Accelerates training convergence
+        
+        ⚡ ACTIVATION: SiLU (Sigmoid Linear Unit)
+           - SiLU(x) = x * sigmoid(x) = x / (1 + e^(-x))
+           - Smooth, differentiable (better gradients than ReLU)
+           - Non-monotonic (can decrease, unlike ReLU)
+           - Proven effective in EfficientNet and Transformers
+        
+        🎯 OUTPUT: Sigmoid activation
+           - Constrains outputs to [0,1] range (matches normalized GPS coords)
+           - Prevents extreme predictions that could cause training instability
+           - Ensures valid coordinate predictions
+        
+        🔧 WEIGHT INITIALIZATION: 
+           - Xavier uniform for final layer with small gain (0.1)
+           - Zero bias initialization for final layer
+           - Prevents initial predictions from being too extreme
         
         Args:
-            input_features (int): 512 for ResNet18
+            input_features (int): 512 for ResNet18 backbone
             
         Returns:
-            nn.Sequential: Regression layers
+            nn.Sequential: Custom regression head
         """
         head = nn.Sequential(
-            nn.Dropout(0.3),                # Regularization: drop 30% of features
-            nn.Linear(input_features, 128),  # First compression layer
-            nn.LayerNorm(128),               # Normalize activations for stability
-            nn.SiLU(),                       # Smooth activation: x * sigmoid(x)
-            nn.Linear(128, 64),              # Second compression layer
-            nn.LayerNorm(64),                # Normalize activations
-            nn.SiLU(),                       # Smooth activation
-            nn.Linear(64, 2),                # Final regression to [lat, lon]
+            # Input regularization
+            nn.Dropout(0.3),                # Drop 30% of backbone features
             
+            # First compression layer: 512 → 128
+            nn.Linear(input_features, 128),
+            nn.LayerNorm(128),               # Normalize across feature dim
+            nn.SiLU(),                       # Smooth activation
+            
+            # Second compression layer: 128 → 64  
+            nn.Linear(128, 64),
+            nn.LayerNorm(64),               # Normalize across feature dim
+            nn.SiLU(),                       # Smooth activation
+            
+            # Final regression layer: 64 → 2 (lat, lon)
+            nn.Linear(64, 2),
+            nn.Sigmoid()                     # Constrain to [0,1] range
         )
         
-        # Initialize final linear layer (index -2 since -1 is TanhTo01)
-        nn.init.xavier_uniform_(head[-1].weight, gain=0.1)
-        nn.init.constant_(head[-1].bias, 0.0)
+        # Initialize final linear layer with small weights to prevent extreme initial predictions
+        final_layer = head[-2]  # -2 because -1 is Sigmoid
+        nn.init.xavier_uniform_(final_layer.weight, gain=0.1)
+        nn.init.constant_(final_layer.bias, 0.0)
         
         return head
 
@@ -342,6 +389,90 @@ class ConvNextGPS(BaseGPSModel):
         )
         
         # Initialize final linear layer
+        nn.init.xavier_uniform_(head[-2].weight, gain=0.1)
+        nn.init.constant_(head[-2].bias, 0.0)
+        
+        return head
+
+    
+class EfficientNetGPS2(BaseGPSModel):
+    """
+    EfficientNetV2-B0 GPS Localization Model with Custom Architecture
+    
+    This model uses EfficientNetV2-B0 as backbone with custom modifications:
+    - Removes global average pooling to preserve spatial information
+    - Adds channel reduction to make the head manageable
+    - Uses scaled sigmoid output activation
+    
+    Architecture:
+        - Backbone: EfficientNetV2-B0 features (without classifier)
+        - Channel Reducer: 1280 → 128 channels via 1x1 convolution
+        - Head: Flattened features → regression layers → GPS coordinates
+    """
+    def __init__(self, input_shape=(3, 224, 224)):
+        super().__init__()
+        self.input_shape = input_shape
+        # Initialize backbone and head using the abstract methods
+        self.backbone = self._get_backbone()
+        
+        # Calculate head input features dynamically
+        with torch.no_grad():
+            dummy = torch.zeros(1, *input_shape)
+            features = self.backbone(dummy)
+            head_input_features = features.numel()
+        
+        self.head = self._get_head(head_input_features)
+    
+    def _get_backbone(self):
+        """
+        Create EfficientNetV2-B0 feature extractor with channel reduction
+        
+        Returns:
+            nn.Sequential: Modified EfficientNet backbone
+        """
+        # Load pretrained EfficientNetV2-B0
+        base_model = models.efficientnet_v2_s(weights='DEFAULT')
+        
+        # Extract features (without classifier and final pooling)
+        features = base_model.features
+        
+        # Add channel reducer to make output manageable
+        # EfficientNetV2-S outputs 1280 channels, reduce to 128
+        reducer = nn.Conv2d(1280, 128, kernel_size=1)
+        
+        # Combine features + reducer + flatten
+        backbone = nn.Sequential(
+            features,      # EfficientNet feature extraction
+            reducer,       # Channel reduction 1280→128  
+            nn.Flatten()   # Flatten for linear layers
+        )
+        
+        return backbone
+    
+    def _get_head(self, input_features):
+        """
+        Create regression head for GPS coordinate prediction
+        
+        Args:
+            input_features (int): Number of flattened features from backbone
+            
+        Returns:
+            nn.Sequential: Regression head
+        """
+        head = nn.Sequential(
+            nn.Dropout(0.4),
+            nn.Linear(input_features, 256),
+            nn.LayerNorm(256),
+            nn.SiLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, 64),
+            nn.LayerNorm(64),
+            nn.SiLU(),
+            nn.Linear(64, 2),
+            nn.Sigmoid()  # Scale to [0,1] range
+        )
+        
+        # Initialize final layer
         nn.init.xavier_uniform_(head[-2].weight, gain=0.1)
         nn.init.constant_(head[-2].bias, 0.0)
         

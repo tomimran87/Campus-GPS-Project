@@ -148,7 +148,8 @@ class GPSDataManager:
         X_train, X_temp, y_train, y_temp = train_test_split(
             X, y,
             test_size=temp_size,
-            random_state=self.random_state
+            random_state=self.random_state,
+            shuffle=True
         )
         
         # Step 3: Second split - divide temp into validation and test
@@ -179,15 +180,15 @@ class GPSDataManager:
         # Training: aggressive augmentation for robustness
         # Val/Test: only normalization (measure true performance)
         train_ds = AugmentedGPSDataset(
-            X_train, y_train_norm.numpy(),
+            X_train, y_train_norm.detach().cpu().numpy(),
             transform=augmentor.get_train_transforms()
         )
         val_ds = AugmentedGPSDataset(
-            X_val, y_val_norm.numpy(),
+            X_val, y_val_norm.detach().cpu().numpy(),
             transform=augmentor.get_val_transforms()
         )
         test_ds = AugmentedGPSDataset(
-            X_test, y_test_norm.numpy(),
+            X_test, y_test_norm.detach().cpu().numpy(),
             transform=augmentor.get_val_transforms()
         )
         
