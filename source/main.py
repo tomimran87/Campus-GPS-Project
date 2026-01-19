@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from data_loader import GPSDataManager
 from loss import HaversineLoss
-from models import ResNetGPS, EfficientNetGPS, ConvNextGPS, EfficientNetGPS2
+from models import ResNetGPS, EfficientNetGPS, ConvNextGPS, EfficientNetGPS2, EfficientNetGPS_withGEM
 from trainer import Trainer
 from metrics import GPSMetrics
 import torch.nn as nn
@@ -12,13 +12,12 @@ import cv2
 # --- CONFIGURATION ---
 # Hyperparameters for training the GPS localization ensemble
 CONFIG = {
-    "X_PATH": "/home/tommimra/GPS_BGU_model/combined_data/X_gps.npy",        # Path to image data (N, 224, 224, 3)
-    "Y_PATH": "/home/tommimra/GPS_BGU_model/combined_data/y_gps.npy",        # Path to GPS coordinates (N, 2)
+    "X_PATH": "./latest_data/X_photos.npy",        # Path to image data (N, 224, 224, 3)
+    "Y_PATH": "./latest_data/y_photos.npy",        # Path to GPS coordinates (N, 2)
     "BATCH_SIZE": 32,             # Batch size for training
-    "EPOCHS": 300,                 # Maximum number of epochs
-    "LR": 0.001,                  # Learning rate: increased to 0.003 for faster convergence
+    "EPOCHS": 120,                 # Maximum number of epochs
+    "LR": 0.0004,                  # Learning rate: increased to 0.003 for faster convergence
     "ConvLR": 0.00005               # Model needs stronger signal to learn GPS variance
-                                  # Tanh activation can handle higher LR without instability
 }
 
 def run_pipeline():

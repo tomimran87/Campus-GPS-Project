@@ -35,8 +35,8 @@ class Trainer:
         
         # Optimizer: AdamW (Adam with Weight Decay)
         # AdamW separates weight decay from gradient updates, improving regularization
-        # weight_decay=1e-4 provides L2 regularization to prevent overfitting
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=lr, weight_decay=1e-4)
+        # weight_decay=1e-3 provides L2 regularization to prevent overfitting
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=lr, weight_decay=1e-3)
         
         # Learning Rate Scheduler: ReduceLROnPlateau
         # Monitors validation loss and reduces LR when improvement plateaus
@@ -123,7 +123,7 @@ class Trainer:
                 # self.scheduler.step()
                 
                 # Update progress bar with current loss
-                pbar.set_postfix({'loss': f"{loss.item():.2f}m"})
+                pbar.set_postfix({'loss': f"{loss.item():.2f}"})
             
             # Warning if many NaN batches occurred
             if nan_batches > 0:
@@ -140,7 +140,7 @@ class Trainer:
                 self.patience_counter = 0
                 # Save best model state for later restoration
                 self.best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
-                print(f"✓ New best model (Val Error: {avg_val_loss:.2f}m)")
+                print(f"✓ New best model (Val Error: {avg_val_loss:.4f})")
             else:
                 # No improvement
                 self.patience_counter += 1
@@ -149,7 +149,7 @@ class Trainer:
                     # Restore best model before stopping
                     if self.best_model_state is not None:
                         self.model.load_state_dict(self.best_model_state)
-                        print(f"✓ Restored best model (Val Error: {self.best_val_loss:.2f}m)")
+                        print(f"✓ Restored best model (Val Error: {self.best_val_loss:.4f})")
                     break
             
             # Update learning rate based on validation loss
@@ -160,7 +160,7 @@ class Trainer:
             history.append(avg_val_loss)
             
             # Print epoch summary
-            print(f"Epoch {epoch+1}: Train Error: {avg_train_loss:.2f}m | Val Error: {avg_val_loss:.2f}m")
+            print(f"Epoch {epoch+1}: Train Error: {avg_train_loss:.4f} | Val Error: {avg_val_loss:.4f}")
         
         return history
 

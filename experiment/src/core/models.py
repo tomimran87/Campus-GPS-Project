@@ -1,8 +1,7 @@
 import torch
-import torch
 import torch.nn as nn
 import torchvision.models as models
-from base_model import BaseGPSModel
+from .base_model import BaseGPSModel
 
 
 class TanhTo01(nn.Module):
@@ -176,7 +175,7 @@ class ResNetGPS(BaseGPSModel):
             
             # Final regression layer: 64 → 2 (lat, lon)
             nn.Linear(64, 2),
-            nn.Sigmoid()                     # Constrain to [0,1] range
+            TanhTo01()                       # Constrain to [0,1] range with better gradients
         )
         
         # Initialize final linear layer with small weights to prevent extreme initial predictions
@@ -389,90 +388,6 @@ class ConvNextGPS(BaseGPSModel):
         )
         
         # Initialize final linear layer
-        nn.init.xavier_uniform_(head[-2].weight, gain=0.1)
-        nn.init.constant_(head[-2].bias, 0.0)
-        
-        return head
-
-    
-class EfficientNetGPS2(BaseGPSModel):
-    """
-    EfficientNetV2-B0 GPS Localization Model with Custom Architecture
-    
-    This model uses EfficientNetV2-B0 as backbone with custom modifications:
-    - Removes global average pooling to preserve spatial information
-    - Adds channel reduction to make the head manageable
-    - Uses scaled sigmoid output activation
-    
-    Architecture:
-        - Backbone: EfficientNetV2-B0 features (without classifier)
-        - Channel Reducer: 1280 → 128 channels via 1x1 convolution
-        - Head: Flattened features → regression layers → GPS coordinates
-    """
-    def __init__(self, input_shape=(3, 224, 224)):
-        super().__init__()
-        self.input_shape = input_shape
-        # Initialize backbone and head using the abstract methods
-        self.backbone = self._get_backbone()
-        
-        # Calculate head input features dynamically
-        with torch.no_grad():
-            dummy = torch.zeros(1, *input_shape)
-            features = self.backbone(dummy)
-            head_input_features = features.numel()
-        
-        self.head = self._get_head(head_input_features)
-    
-    def _get_backbone(self):
-        """
-        Create EfficientNetV2-B0 feature extractor with channel reduction
-        
-        Returns:
-            nn.Sequential: Modified EfficientNet backbone
-        """
-        # Load pretrained EfficientNetV2-B0
-        base_model = models.efficientnet_v2_s(weights='DEFAULT')
-        
-        # Extract features (without classifier and final pooling)
-        features = base_model.features
-        
-        # Add channel reducer to make output manageable
-        # EfficientNetV2-S outputs 1280 channels, reduce to 128
-        reducer = nn.Conv2d(1280, 128, kernel_size=1)
-        
-        # Combine features + reducer + flatten
-        backbone = nn.Sequential(
-            features,      # EfficientNet feature extraction
-            reducer,       # Channel reduction 1280→128  
-            nn.Flatten()   # Flatten for linear layers
-        )
-        
-        return backbone
-    
-    def _get_head(self, input_features):
-        """
-        Create regression head for GPS coordinate prediction
-        
-        Args:
-            input_features (int): Number of flattened features from backbone
-            
-        Returns:
-            nn.Sequential: Regression head
-        """
-        head = nn.Sequential(
-            nn.Dropout(0.4),
-            nn.Linear(input_features, 256),
-            nn.LayerNorm(256),
-            nn.SiLU(),
-            nn.Dropout(0.3),
-            nn.Linear(256, 64),
-            nn.LayerNorm(64),
-            nn.SiLU(),
-            nn.Linear(64, 2),
-            nn.Sigmoid()  # Scale to [0,1] range
-        )
-        
-        # Initialize final layer
         nn.init.xavier_uniform_(head[-2].weight, gain=0.1)
         nn.init.constant_(head[-2].bias, 0.0)
         
