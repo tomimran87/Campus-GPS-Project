@@ -59,9 +59,7 @@ This will:
 5. Display detailed metrics and error analysis
 
 ### Evaluation
-**The required evaluation function (predict_gps) is at source/predict.py**
-We also have our own evaluation code:
-Evaluate trained models with comprehensive metrics:
+**The required evaluation function (predict_gps) is at source/predict.py**. We also have our own evaluation code:
 
 ```bash
 cd source
