@@ -7,31 +7,6 @@ This project implements a **Deep Learning-based Visual Localization System** des
 
 The model was trained on a custom dataset collected within the **Ben-Gurion University** campus, demonstrating the feasibility of autonomous navigation and localization in GPS-denied environments using purely visual data.
 
-### 🚀 Key Technologies
-* **Architecture:** EfficientNet-B7 (Pre-trained on ImageNet, Fine-tuned for Regression)
-* **Framework:** PyTorch
-* **Interface:** Gradio (Custom CSS/HTML Design)
-* **Visualization:** Folium & Leaflet.js for interactive mapping
-* **Data Processing:** Pillow-HEIF for raw mobile sensor data
-
-### 📊 Performance Metrics
-The system evaluates performance using the **Haversine Formula** to calculate the Great Circle distance between the predicted coordinates and the ground truth EXIF metadata. 
-
-
-## Recent Improvements (January 2026)
-
-### 🔧 Critical Fixes
-- **NaN Collapse Prevention**: Added double-clamping in Haversine loss and gradient clipping (max_norm=1.0)
-- **Data Leakage Fix**: Normalization parameters now computed only from training set
-- **Training Stability**: Reduced initial LR to 0.0001, added early stopping with patience=5
-- **Reproducibility**: Random seeds set for PyTorch and NumPy
-
-### 📊 New Features
-- **Test Set Evaluation**: Proper 70/15/15 train/val/test split
-- **Comprehensive Metrics**: GPSMetrics class with percentiles and accuracy thresholds
-- **Model Improvements**: Added LayerNorm and Sigmoid output activation to all models
-- **Evaluation Script**: Dedicated `evaluate.py` for model comparison
-- **Enhanced Documentation**: Detailed docstrings explaining all math and design choices
 
 ## Installation
 
