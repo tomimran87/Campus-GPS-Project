@@ -1,5 +1,5 @@
 # GPS Image Localization Project - Dependencies
-# Python 3.8+ required
+# Python 3.9+ required
 
 # Core Deep Learning Framework
 torch>=2.0.0
