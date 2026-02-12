@@ -21,7 +21,7 @@ import numpy as np
 import cv2
 from pathlib import Path
 from typing import Tuple
-from models import EfficientNetGPS_withGEM
+from models import EfficientNetGPS
 
 
 # --- MODEL CONFIGURATION ---
@@ -77,7 +77,7 @@ class GPSPredictor:
             raise FileNotFoundError(f"Model checkpoint not found: {checkpoint_path}")
         
         # Initialize model
-        self.model = EfficientNetGPS_withGEM()
+        self.model = EfficientNetGPS()
         self.model.to(self.device)
         
         # Load pretrained weights

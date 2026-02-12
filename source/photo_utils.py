@@ -13,7 +13,7 @@ pillow_heif.register_heif_opener()
 
 # --- CONFIGURATION ---
 IMG_SIZE = (255, 255)
-BASE_DIR = '.'
+BASE_DIR = '..'
 PHOTOS_DIR = os.path.join(BASE_DIR, 'dataset_root', 'images')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'latest_data')
 
@@ -152,7 +152,7 @@ def process_folder(folder_path, output_csv=None):
 
 def load_photos():
     # Process standard photos folder with ground truth CSV
-    csv_path = os.path.join(BASE_DIR_DIR, 'dataset_root', 'gt.csv')
+    csv_path = os.path.join(BASE_DIR, 'dataset_root', 'gt.csv')
     X, y = process_folder(PHOTOS_DIR, output_csv=csv_path)
     X = np.array(X)
     y = np.array(y)

@@ -44,7 +44,7 @@ class Trainer:
         # factor=0.5: Reduce LR by half when triggered
         # patience=3: Wait 3 epochs without improvement before reducing
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.5, patience=3, verbose=True
+            self.optimizer, mode='min', factor=0.5, patience=3
         )
         
         # Early Stopping Parameters

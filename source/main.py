@@ -12,8 +12,8 @@ import cv2
 # --- CONFIGURATION ---
 # Hyperparameters for training the GPS localization ensemble
 CONFIG = {
-    "X_PATH": "./latest_data/X_photos.npy",        # Path to image data (N, 224, 224, 3)
-    "Y_PATH": "./latest_data/y_photos.npy",        # Path to GPS coordinates (N, 2)
+    "X_PATH": "../latest_data/X_photos.npy",        # Path to image data (N, 224, 224, 3)
+    "Y_PATH": "../latest_data/y_photos.npy",        # Path to GPS coordinates (N, 2)
     "BATCH_SIZE": 32,             # Batch size for training
     "EPOCHS": 120,                 # Maximum number of epochs
     "LR": 0.0004,                  # Learning rate: increased to 0.003 for faster convergence
@@ -60,10 +60,7 @@ def run_pipeline():
 
     # 3. Model Zoo - Ensemble of different CNN architectures
     models_to_train = {
-        # "ResNet18": ResNetGPS(),
         "EfficientNet": EfficientNetGPS(),
-        # "ConvNext": ConvNextGPS(),
-        # "EfficientNetV2": EfficientNetGPS2()
     }
 
     trained_models = {} 
