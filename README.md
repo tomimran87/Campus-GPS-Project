@@ -11,15 +11,15 @@ The model was trained on a custom dataset collected within the **Ben-Gurion Univ
 ## Installation
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.9 or higher
 - CUDA 11.8+ (for GPU acceleration, optional but recommended)
 
 ### Setup
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd GPS_BGU_model
+git clone https://github.com/tomimran87/Campus-GPS-Project.git
+cd Campus-GPS-Project
 ```
 
 2. Install dependencies:
@@ -59,18 +59,8 @@ This will:
 5. Display detailed metrics and error analysis
 
 ### Evaluation
-**The required evaluation function (predict_gps) is at source/predict.py**. We also have our own evaluation code:
+**The required evaluation function (predict_gps) is at source/predict.py**.
 
-```bash
-cd source
-python evaluate.py
-```
-
-This provides:
-- Individual model performance
-- Ensemble average performance
-- Detailed metrics (mean, median, percentiles, accuracy@thresholds)
-- Error distribution analysis
 
 ## Project Structure
 
