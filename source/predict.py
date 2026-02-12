@@ -31,7 +31,7 @@ MIN_VAL = np.array([31.261283, 34.801083], dtype=np.float32)  # [lat_min, lon_mi
 MAX_VAL = np.array([31.262683, 34.804469], dtype=np.float32)  # [lat_max, lon_max]
 
 # Model checkpoint path
-MODEL_CHECKPOINT = "EfficientNet_gps.pth"
+MODEL_CHECKPOINT = "../EfficientNet_gps.pth"
 
 # Image size used during training
 IMG_SIZE = (255, 255)
