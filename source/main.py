@@ -272,62 +272,67 @@ def detailed_test_error_analysis(models_dict, test_loader, min_val, max_val, dev
     print("AVERAGE TEST ERRORS")
     print("-"*50)
     
-    ensemble_avg = np.mean(all_errors['ensemble'])
-    print(f"🎯 Ensemble Average:     {ensemble_avg:.2f} meters")
-    
     for name in models_dict.keys():
         model_avg = np.mean(all_errors[name])
         print(f"📊 {name}:     {model_avg:.2f} meters")
     
-    # 2. Error Distribution in Ranges
-    print(f"\n" + "-"*50)
-    print("ERROR DISTRIBUTION BY DISTANCE RANGES")
-    print("-"*50)
+    if len(models_dict) > 1:
+        ensemble_avg = np.mean(all_errors['ensemble'])
+        print(f"🎯 Ensemble Average:     {ensemble_avg:.2f} meters")
     
+    # Build the list of keys to report: each individual model, then ensemble if >1 model
+    num_models = len(models_dict)
+    report_keys = list(models_dict.keys())
+    if num_models > 1:
+        report_keys.append('ensemble')
+
     # Define error ranges (in meters)
     ranges = [(0, 3), (3, 6), (6, 10), (10, 15), (15, 25), (25, float('inf'))]
     range_labels = ['0-3m', '3-6m', '6-10m', '10-15m', '15-25m', '>25m']
-    
-    print(f"{'Range':<10} {'Ensemble':<12} {'Count':<8} {'Percentage':<12}")
-    print("-" * 50)
-    
-    ensemble_errors = all_errors['ensemble']
-    for (low, high), label in zip(ranges, range_labels):
-        if high == float('inf'):
-            mask = ensemble_errors >= low
-        else:
-            mask = (ensemble_errors >= low) & (ensemble_errors < high)
-        
-        count = np.sum(mask)
-        percentage = (count / total_samples) * 100
-        
-        print(f"{label:<10} {count:<12} {count:<8} {percentage:<12.1f}%")
-    
-    # 3. Statistical Summary
-    print(f"\n" + "-"*50)
-    print("STATISTICAL SUMMARY (ENSEMBLE)")
-    print("-"*50)
-    
-    stats_ensemble = all_errors['ensemble']
-    print(f"  Mean:       {np.mean(stats_ensemble):.2f}m")
-    print(f"  Median:     {np.median(stats_ensemble):.2f}m")
-    print(f"  Std Dev:    {np.std(stats_ensemble):.2f}m")
-    print(f"  Min Error:  {np.min(stats_ensemble):.2f}m")
-    print(f"  Max Error:  {np.max(stats_ensemble):.2f}m")
-    print(f"  25th %ile:  {np.percentile(stats_ensemble, 25):.2f}m")
-    print(f"  75th %ile:  {np.percentile(stats_ensemble, 75):.2f}m")
-    print(f"  95th %ile:  {np.percentile(stats_ensemble, 95):.2f}m")
-    
-    # 4. Accuracy Thresholds
-    print(f"\n" + "-"*50)
-    print("ACCURACY AT DIFFERENT THRESHOLDS")
-    print("-"*50)
-    
     thresholds = [3, 5, 10, 15, 20]
-    for threshold in thresholds:
-        accurate_count = np.sum(ensemble_errors <= threshold)
-        accuracy = (accurate_count / total_samples) * 100
-        print(f"  ≤ {threshold}m:  {accurate_count}/{total_samples} samples ({accuracy:.1f}%)")
+
+    for key in report_keys:
+        if key == 'ensemble':
+            display_name = f"ENSEMBLE (Mean of {num_models} models)"
+        else:
+            display_name = key
+
+        errors = all_errors[key]
+
+        # Error Distribution in Ranges
+        print(f"\n" + "="*60)
+        print(f"  {display_name}")
+        print("="*60)
+
+        print(f"\n  Error Distribution:")
+        print(f"  {'Range':<10} {'Count':<8} {'Percentage':<12}")
+        print("  " + "-" * 35)
+        for (low, high), label in zip(ranges, range_labels):
+            if high == float('inf'):
+                mask = errors >= low
+            else:
+                mask = (errors >= low) & (errors < high)
+            count = np.sum(mask)
+            percentage = (count / total_samples) * 100
+            print(f"  {label:<10} {count:<8} {percentage:<12.1f}%")
+
+        # Statistical Summary
+        print(f"\n  Statistics:")
+        print(f"    Mean:       {np.mean(errors):.2f}m")
+        print(f"    Median:     {np.median(errors):.2f}m")
+        print(f"    Std Dev:    {np.std(errors):.2f}m")
+        print(f"    Min Error:  {np.min(errors):.2f}m")
+        print(f"    Max Error:  {np.max(errors):.2f}m")
+        print(f"    25th %ile:  {np.percentile(errors, 25):.2f}m")
+        print(f"    75th %ile:  {np.percentile(errors, 75):.2f}m")
+        print(f"    95th %ile:  {np.percentile(errors, 95):.2f}m")
+
+        # Accuracy Thresholds
+        print(f"\n  Accuracy Thresholds:")
+        for threshold in thresholds:
+            accurate_count = np.sum(errors <= threshold)
+            accuracy = (accurate_count / total_samples) * 100
+            print(f"    ≤ {threshold}m:  {accurate_count}/{total_samples} samples ({accuracy:.1f}%)")
     
     # 5. Model Comparison
     print(f"\n" + "-"*50)
@@ -395,8 +400,9 @@ def show_last_sample_predictions(models_dict, test_loader, min_val, max_val, dev
             predictions[name] = pred_norm
     
     # Compute ensemble (mean) prediction
-    all_preds = torch.stack(list(predictions.values()))  # Shape: (3, 1, 2)
+    all_preds = torch.stack(list(predictions.values()))  # Shape: (num_models, 1, 2)
     ensemble_pred = all_preds.mean(dim=0)  # Shape: (1, 2)
+    num_models = len(predictions)
     
     # Denormalize everything
     min_val_cpu = min_val.cpu()
@@ -442,17 +448,23 @@ def show_last_sample_predictions(models_dict, test_loader, min_val, max_val, dev
     )
     
     print(f"\n" + "-"*60)
-    print(f"\nEnsemble (Mean of 3 models) Prediction:")
-    print(f"  Latitude:  {ensemble_gps[0]:.6f}° (Δ{abs(ensemble_gps[0] - actual_gps[0]):.6f}°)")
-    print(f"  Longitude: {ensemble_gps[1]:.6f}° (Δ{abs(ensemble_gps[1] - actual_gps[1]):.6f}°)")
-    print(f"  Error: {ensemble_distance:.2f} meters")
+    if num_models > 1:
+        print(f"\nEnsemble (Mean of {num_models} models) Prediction:")
+        print(f"  Latitude:  {ensemble_gps[0]:.6f}° (Δ{abs(ensemble_gps[0] - actual_gps[0]):.6f}°)")
+        print(f"  Longitude: {ensemble_gps[1]:.6f}° (Δ{abs(ensemble_gps[1] - actual_gps[1]):.6f}°)")
+        print(f"  Error: {ensemble_distance:.2f} meters")
     
-    # Summary
+    # Summary — only show Best/Worst comparison when multiple models are trained
     print(f"\n" + "-"*60)
     print("\nSummary:")
-    print(f"  Best Individual Model: {min(model_errors, key=model_errors.get)} ({min(model_errors.values()):.2f}m)")
-    print(f"  Worst Individual Model: {max(model_errors, key=model_errors.get)} ({max(model_errors.values()):.2f}m)")
-    print(f"  Ensemble Error: {ensemble_distance:.2f}m")
+    if num_models > 1:
+        print(f"  Best Individual Model: {min(model_errors, key=model_errors.get)} ({min(model_errors.values()):.2f}m)")
+        print(f"  Worst Individual Model: {max(model_errors, key=model_errors.get)} ({max(model_errors.values()):.2f}m)")
+        print(f"  Ensemble Error: {ensemble_distance:.2f}m")
+    else:
+        model_name = list(model_errors.keys())[0]
+        print(f"  Model: {model_name}")
+        print(f"  Test Error: {model_errors[model_name]:.2f}m")
     print("="*60 + "\n")
 
 

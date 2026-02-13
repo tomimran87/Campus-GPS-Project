@@ -29,7 +29,29 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-### Data Preparation
+### 1. Data Setup (Required Before Anything Else)
+
+The `dataset_root/images/` folder is **empty by default** — images are not included in the Git repository due to their size. You must populate it before running any scripts.
+
+**Option A: Download the BGU campus dataset**
+
+Download the images from the shared Google Drive folder:
+🔗 **[Download Dataset Images](https://drive.google.com/drive/folders/1-sgYP8CwPJzz3IkQI049IjyAc8SmlZhR)**
+
+After downloading, place **all image files** into:
+```
+<your-path>/Campus-GPS-Project/dataset_root/images/
+```
+
+The filenames must match those listed in `dataset_root/gt.csv` (e.g., `IMG_1725.JPG`, `IMG_1082.JPG`, etc.).
+
+**Option B: Use your own photos from the BGU area**
+
+You can also take your own geotagged photos around the Ben-Gurion University campus. Ensure each photo has valid **EXIF GPS metadata** embedded (most smartphone cameras do this automatically). Place them in the same `dataset_root/images/` folder and also make sure you add the matching ground truth and gps location to gt.csv 
+
+> ⚠️ **If this folder is empty, `photo_utils.py` will produce empty arrays and `main.py` will crash.**
+
+### 2. Data Preparation
 Extract GPS coordinates from images and prepare data:
 
 ```bash
@@ -43,7 +65,7 @@ This will:
 3. Save processed data to `latest_data/X_photos.npy` and `y_photos.npy`
 4. Generate ground truth CSV: `latest_data/gt.csv`
 
-### Training
+### 3. Training
 Train models in the ensemble:
 
 ```bash
@@ -168,6 +190,82 @@ CONFIG = {
 - Data Normalization: ImageNet statistics ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 - Reproducibility: Random seed 42 for all operations
 
+## Advanced Configuration: Training Options
+
+### Single vs. Multi-Model Training
+
+By default, `main.py` trains **only EfficientNet-B0**. The code supports three architectures that can be trained individually or together as an ensemble.
+
+In `source/main.py`, find the `models_to_train` dictionary (around line 70):
+
+```python
+# Current default — single model:
+models_to_train = {
+    "EfficientNet": EfficientNetGPS(),
+}
+```
+
+To enable **multi-model ensemble training**, replace it with:
+
+```python
+# Full ensemble — trains all three architectures:
+models_to_train = {
+    "EfficientNet": EfficientNetGPS(),
+    "ResNet": ResNetGPS(),
+    "ConvNeXt": ConvNextGPS(),
+}
+```
+
+You can also train any single alternative model:
+
+```python
+# Train only ResNet:
+models_to_train = {
+    "ResNet": ResNetGPS(),
+}
+```
+
+> **Note:** ConvNeXt is sensitive to learning rate. If you enable it, consider using `CONFIG["ConvLR"] = 0.00005` or lowering `CONFIG["LR"]` to `0.0001`. See the project report for details on ConvNeXt instability at higher learning rates.
+
+### Additional Model Variants
+
+The codebase also includes experimental variants imported in `main.py`:
+- `EfficientNetGPS2` — Alternative EfficientNet configuration
+- `EfficientNetGPS_withGEM` — Uses Generalized Mean pooling for attention to salient features
+
+These can be added to `models_to_train` in the same way.
+
+---
+
+## Understanding the Output
+
+When you run `python main.py`, the logs contain several important sections. Here's what they mean:
+
+### Normalization Parameters
+```
+Normalization parameters (from training set only):
+  Min: lat=31.261851, lon=34.804034
+  Max: lat=31.262177, lon=34.804194
+```
+The model predicts GPS coordinates normalized to the range [0, 1]. To convert between real GPS coordinates and this normalized range, the pipeline computes the **min/max latitude and longitude from the training split only**. These same parameters are then applied to the validation and test sets. This prevents **data leakage** — the model never "sees" test set statistics during training.
+
+### Ensemble Prediction
+```
+Ensemble (Mean of 3 models) Prediction:
+```
+The code is architecturally designed to support an **ensemble of multiple models**. It averages predictions from all models in `models_to_train`. If you only train one model (the default EfficientNet), the "Ensemble" result is simply the output of that single model — the averaging has no effect since there's only one prediction to average. This is expected behavior, not a bug.
+
+### Summary Block (Best/Worst Model)
+```
+Summary:
+  Best Individual Model: EfficientNet (6.74m)
+  Worst Individual Model: EfficientNet (6.74m)
+  Ensemble Error: 6.74m
+```
+When only one model is trained, the Best and Worst model will be identical (since there's only one to compare). This comparison is meaningful when multiple models are trained in ensemble mode — it helps identify which architecture performs best. When running a single model, this section is automatically simplified to avoid redundant output.
+
+---
+
 ## Performance Metrics
 
 The evaluation script reports:
@@ -187,25 +285,39 @@ The evaluation script reports:
 - % predictions within 10m
 - % predictions within 50m
 
-## Expected Performance
+## Actual Performance (Research Results)
 
-Estimated performance on campus-scale GPS localization (depends on dataset):
+The following results were obtained from our research using 3,646 campus images with the best configuration per model (100 epochs, full data). See the [project report (PDF)](FINAL_GPS_PROJECT%20(3).pdf) for the complete analysis.
 
-| Model | Mean Error | Median Error | 90th Percentile | Accuracy@10m |
-|-------|-----------|-------------|-----------------|-------------|
-| ResNet18 | 15-25m | 12-20m | 35-50m | 65-75% |
-| EfficientNet | 12-20m | 10-15m | 28-45m | 75-85% |
-| ConvNeXt | 14-22m | 11-18m | 32-48m | 70-80% |
-| **Ensemble** | **10-18m** | **8-14m** | **22-40m** | **80-90%** |
+### Best Configuration per Model (Phase 1)
 
-**Performance Factors:**
-- Dataset size and geographic distribution
-- Image resolution and quality
-- GPS coordinate precision
-- Seasonal/lighting variations
-- Model training duration and hyperparameters
+| Model | Mean Error | Median Error | P75 | P90 | P95 | Max Error |
+|-------|-----------|-------------|-----|-----|-----|-----------|
+| **EfficientNet-B0** | **5.24m** | **2.75m** | 5.39m | 11.91m | 18.01m | 94.05m |
+| ConvNeXt-Tiny | 6.12m | 3.65m | 7.38m | 12.93m | 16.74m | 99.66m |
+| ResNet18 | 6.43m | 3.77m | 7.89m | 15.15m | 20.28m | 94.76m |
 
-*Actual results will vary based on your specific dataset and conditions*
+### Final Optimized Model (Phase 2 — EfficientNet-B0)
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| Mean Error | 5.24m | Average distance from ground truth |
+| Median Error | 4.01m | 50% of predictions within this radius |
+| P75 | 5.35m | 75% of predictions are highly accurate |
+| P95 | 10.22m | 95% of predictions are usable (<10m) |
+| Accuracy (<10m) | 94.5% | High reliability |
+| Accuracy (<20m) | 98.2% | Near-perfect coarse localization |
+| Max Error | 90.07m | Improved stability vs. Phase 1 baselines |
+
+### Model Robustness to Augmented Testing (100 Epochs, Half Data)
+
+| Model | Regular Test | Augmented Test | Degradation |
+|-------|-------------|---------------|-------------|
+| ConvNeXt | 9.62m | 14.35m | 1.49× |
+| EfficientNet | 10.67m | 24.34m | 2.28× |
+| ResNet18 | 11.34m | 24.38m | 2.15× |
+
+> **Key Finding:** EfficientNet-B0 achieves the best overall accuracy, while ConvNeXt-Tiny is the most robust to viewpoint changes. See the full report for details on all 10 experiments.
 
 ## Troubleshooting
 
