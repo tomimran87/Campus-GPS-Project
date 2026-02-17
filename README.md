@@ -81,7 +81,42 @@ This will:
 5. Display detailed metrics and error analysis
 
 ### Evaluation
-**The required evaluation function (predict_gps) is at source/predict.py**.
+
+- **Step 1 — Place the trained model in the project root:**
+  - Put the checkpoint file `EfficientNet_gps.pth` in the repository root (CAMPUS-GPS-Project). The trained model can be downloaded from:
+    https://drive.google.com/drive/u/0/folders/1wyGhNcXOpeMbq_Intn9gNEH0A8diybbX
+
+- **Step 2 — Create an evaluation script in `source/`:**
+  - The inference function `predict_gps` is implemented in `source/predict.py` and will load `../EfficientNet_gps.pth` by default (relative to `source/`).
+  - We provide a minimal example script `source/eval_example.py` that demonstrates how to call `predict_gps` on a single image.
+
+Example usage (create `source/eval_example.py` or run the provided example):
+
+```python
+from predict import predict_gps
+import numpy as np
+from PIL import Image
+
+# Put the path to the image here:
+img_path = "../dataset_root/images/IMG_2322.JPG"
+image = np.array(Image.open(img_path).convert('RGB'))
+
+gps_prediction = predict_gps(image)
+
+print(f"predicted gps: {gps_prediction}")
+```
+
+Run the example from the repository root:
+
+```bash
+cd source
+python eval_example.py
+```
+
+Notes:
+- `source/predict.py` exposes `predict_gps(image: np.ndarray) -> np.ndarray` which expects an RGB `uint8` numpy array with shape `(H, W, 3)` and values in `[0, 255]`.
+- The default checkpoint path in `source/predict.py` is `../EfficientNet_gps.pth` (project root). If you store the checkpoint elsewhere, pass the path when instantiating `GPSPredictor` or modify `MODEL_CHECKPOINT` in `source/predict.py`.
+
 
 
 ## Project Structure
